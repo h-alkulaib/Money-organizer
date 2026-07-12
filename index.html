@@ -232,14 +232,42 @@ const SPEND_CHIPS = ["Candy 🍬","Toy 🧸","Game 🎮","Snack 🍟"];
 const QUICK_AMOUNTS = [0.5, 1, 2, 5];
 const GOAL_EMOJIS = ["🎧","🧱","🚲","🎮","⚽","📱","🎨","🐶"];
 
-let transactions = [
-  { id: "t1", type: "in", amount: 5, note: "Eid money", date: "Jul 2" },
-  { id: "t2", type: "out", amount: 1, note: "Candy 🍬", date: "Jul 4" },
-];
-let goals = [
-  { id: "g1", name: "New headphones", emoji: "🎧", target: 15 },
-  { id: "g2", name: "Lego set", emoji: "🧱", target: 25 },
-];
+const STORAGE_KEY = "money-organizer-data-v1";
+
+const DEFAULT_DATA = {
+  transactions: [
+    { id: "t1", type: "in", amount: 5, note: "Eid money", date: "Jul 2" },
+    { id: "t2", type: "out", amount: 1, note: "Candy 🍬", date: "Jul 4" },
+  ],
+  goals: [
+    { id: "g1", name: "New headphones", emoji: "🎧", target: 15 },
+    { id: "g2", name: "Lego set", emoji: "🧱", target: 25 },
+  ],
+};
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return structuredClone(DEFAULT_DATA);
+    const parsed = JSON.parse(raw);
+    if (!parsed.transactions || !parsed.goals) return structuredClone(DEFAULT_DATA);
+    return parsed;
+  } catch (e) {
+    return structuredClone(DEFAULT_DATA);
+  }
+}
+
+function saveData() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify({ transactions, goals }));
+  } catch (e) {
+    // storage unavailable (e.g. private browsing) - fail silently
+  }
+}
+
+const initial = loadData();
+let transactions = initial.transactions;
+let goals = initial.goals;
 
 let formMode = null;
 let selectedGoalEmoji = "🎧";
@@ -370,11 +398,13 @@ function handleSave() {
     transactions.unshift({ id: uid(), type: formMode, amount, note, date });
   }
   closeForm();
+  saveData();
   render();
 }
 
 function deleteGoal(id) {
   goals = goals.filter(g => g.id !== id);
+  saveData();
   render();
 }
 
